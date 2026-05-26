@@ -1,229 +1,119 @@
-import type { SimulationResult } from '../types';
-import { AlertTriangle, CheckCircle, TrendingUp, Droplets, Zap, Scale } from 'lucide-react';
+import React from 'react';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
+} from 'recharts';
+import type { SimulationResults } from '../data/simulationEngine';
 
-interface ResultsPanelProps {
-  result: SimulationResult;
+interface Props {
+  results: SimulationResults;
 }
 
-function StatCard({
-  label,
-  value,
-  unit,
-  color,
-  icon,
-}: {
-  label: string;
-  value: string | number;
-  unit: string;
-  color: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className={`bg-slate-800/60 rounded-xl border border-slate-700/50 p-4 ${color}`}>
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
-        {icon}
-      </div>
-      <div className="text-2xl font-bold">
-        {value}
-        <span className="text-sm font-normal text-slate-400 ml-1">{unit}</span>
-      </div>
-    </div>
-  );
-}
+const COLORS = ['#ef4444', '#f59e0b', '#22c55e', '#3b82f6', '#a855f7', '#6b7280', '#ec4899'];
 
-export default function ResultsPanel({ result }: ResultsPanelProps) {
-  const { yields, properties, heatBalance, materialBalance, warnings } = result;
+const ResultsPanel: React.FC<Props> = ({ results }) => {
+  const { yields, keyIndicators } = results;
+
+  const yieldData = [
+    { name: 'Газ', value: yields.gas, fill: '#ef4444' },
+    { name: 'Головка стаб.', value: yields.headStabilization, fill: '#f97316' },
+    { name: 'Бензин', value: yields.gasoline, fill: '#eab308' },
+    { name: 'Лёгкий г/о', value: yields.lightGasOil, fill: '#22c55e' },
+    { name: 'Тяжёлый г/о', value: yields.heavyGasOil, fill: '#3b82f6' },
+    { name: 'Кокс', value: yields.coke, fill: '#a855f7' },
+    { name: 'Потери', value: yields.losses, fill: '#6b7280' },
+  ];
+
+  const radarData = [
+    { subject: 'Глубина конверсии', A: keyIndicators.conversionDepth, fullMark: 100 },
+    { subject: 'Выход светлых', A: keyIndicators.lightProductsYield, fullMark: 80 },
+    { subject: 'Выход кокса', A: keyIndicators.cokeYield, fullMark: 40 },
+    { subject: 'Жёсткость крекинга', A: keyIndicators.thermalCrackingSeverity * 100, fullMark: 200 },
+    { subject: 'Уд. расход энергии', A: keyIndicators.specificEnergyConsumption / 5, fullMark: 100 },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Предупреждения */}
-      {warnings.length > 0 && (
-        <div className="bg-amber-900/20 border border-amber-700/50 rounded-xl p-4 space-y-2">
-          <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
-            <AlertTriangle size={16} />
-            Предупреждения ({warnings.length})
-          </div>
-          {warnings.map((w, i) => (
-            <p key={i} className="text-amber-300/80 text-sm pl-6">{w}</p>
-          ))}
-        </div>
-      )}
-
-      {warnings.length === 0 && (
-        <div className="bg-emerald-900/20 border border-emerald-700/50 rounded-xl p-4">
-          <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm">
-            <CheckCircle size={16} />
-            Расчёт выполнен успешно. Параметры в допустимых пределах.
-          </div>
-        </div>
-      )}
-
-      {/* Выходы продуктов */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <TrendingUp size={20} className="text-amber-400" />
-          Выходы продуктов (% масс.)
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard label="Газ" value={yields.gas} unit="%" color="text-sky-300" />
-          <StatCard label="Бензин (н.к.-180°C)" value={yields.gasoline} unit="%" color="text-yellow-300" />
-          <StatCard label="Лёгкий газойль" value={yields.lightGasoil} unit="%" color="text-green-300" />
-          <StatCard label="Тяжёлый газойль" value={yields.heavyGasoil} unit="%" color="text-orange-300" />
-          <StatCard label="Кокс" value={yields.coke} unit="%" color="text-red-300" />
-          <StatCard label="Потери" value={yields.losses} unit="%" color="text-slate-300" />
-        </div>
-        {/* Yield bar */}
-        <div className="mt-3 h-6 rounded-full overflow-hidden flex bg-slate-700/50">
-          <div style={{ width: `${yields.gas}%` }} className="bg-sky-500 transition-all" title={`Газ: ${yields.gas}%`} />
-          <div style={{ width: `${yields.gasoline}%` }} className="bg-yellow-500 transition-all" title={`Бензин: ${yields.gasoline}%`} />
-          <div style={{ width: `${yields.lightGasoil}%` }} className="bg-green-500 transition-all" title={`ЛГ: ${yields.lightGasoil}%`} />
-          <div style={{ width: `${yields.heavyGasoil}%` }} className="bg-orange-500 transition-all" title={`ТГ: ${yields.heavyGasoil}%`} />
-          <div style={{ width: `${yields.coke}%` }} className="bg-red-500 transition-all" title={`Кокс: ${yields.coke}%`} />
-          <div style={{ width: `${yields.losses}%` }} className="bg-slate-500 transition-all" title={`Потери: ${yields.losses}%`} />
-        </div>
-        <div className="flex flex-wrap gap-4 mt-2 text-xs text-slate-400">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-sky-500 inline-block" /> Газ</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-yellow-500 inline-block" /> Бензин</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500 inline-block" /> ЛГ</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-500 inline-block" /> ТГ</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500 inline-block" /> Кокс</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-slate-500 inline-block" /> Потери</span>
-        </div>
+    <div className="space-y-5">
+      {/* Ключевые показатели */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard label="Глубина конверсии" value={`${keyIndicators.conversionDepth}%`} color="text-green-400" />
+        <KpiCard label="Выход светлых" value={`${keyIndicators.lightProductsYield}%`} color="text-cyan-400" />
+        <KpiCard label="Выход кокса" value={`${keyIndicators.cokeYield}%`} color="text-amber-400" />
+        <KpiCard label="Уд. расход энергии" value={`${keyIndicators.specificEnergyConsumption} кДж/кг`} color="text-red-400" />
       </div>
 
-      {/* Свойства продуктов */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Droplets size={20} className="text-blue-400" />
-          Свойства продуктов
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b border-slate-700 text-slate-400">
-                <th className="py-2 px-3">Продукт</th>
-                <th className="py-2 px-3">Плотность</th>
-                <th className="py-2 px-3">Сера, % масс.</th>
-                <th className="py-2 px-3">Доп. характеристика</th>
-              </tr>
-            </thead>
-            <tbody className="text-white">
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-sky-300">Газ</td>
-                <td className="py-2 px-3">{properties.gasDensity.toFixed(2)} кг/м³</td>
-                <td className="py-2 px-3">—</td>
-                <td className="py-2 px-3">—</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-yellow-300">Бензин</td>
-                <td className="py-2 px-3">{properties.gasolineDensity.toFixed(0)} кг/м³</td>
-                <td className="py-2 px-3">{properties.gasolineSulfur.toFixed(3)}</td>
-                <td className="py-2 px-3">—</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-green-300">Лёгкий газойль</td>
-                <td className="py-2 px-3">{properties.lightGasoilDensity.toFixed(0)} кг/м³</td>
-                <td className="py-2 px-3">{properties.lightGasoilSulfur.toFixed(3)}</td>
-                <td className="py-2 px-3">—</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-orange-300">Тяжёлый газойль</td>
-                <td className="py-2 px-3">{properties.heavyGasoilDensity.toFixed(0)} кг/м³</td>
-                <td className="py-2 px-3">{properties.heavyGasoilSulfur.toFixed(3)}</td>
-                <td className="py-2 px-3">—</td>
-              </tr>
-              <tr className="hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-red-300">Кокс</td>
-                <td className="py-2 px-3">—</td>
-                <td className="py-2 px-3">{properties.cokeSulfur.toFixed(3)}</td>
-                <td className="py-2 px-3">
-                  Летучие: {properties.cokeVolatiles.toFixed(1)}%, Зольность: {properties.cokeAsh.toFixed(2)}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Диаграмма выхода продуктов — столбчатая */}
+        <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
+          <h3 className="text-sm font-bold text-slate-300 mb-3">Выход продуктов, % масс.</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={yieldData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+              <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10 }} angle={-20} textAnchor="end" height={50} />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                labelStyle={{ color: '#e2e8f0' }}
+                itemStyle={{ color: '#94a3b8' }}
+              />
+              <Bar dataKey="value" name="% масс." radius={[6, 6, 0, 0]}>
+                {yieldData.map((entry, i) => (
+                  <Cell key={i} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
-      </div>
 
-      {/* Тепловой баланс */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Zap size={20} className="text-yellow-400" />
-          Тепловой баланс
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <StatCard label="Подвод тепла" value={heatBalance.heatInput} unit="МВт" color="text-orange-300" icon={<Zap size={16} className="text-orange-400" />} />
-          <StatCard label="Тепло реакции" value={heatBalance.heatReaction} unit="МВт" color="text-red-300" />
-          <StatCard label="Тепло продуктов" value={heatBalance.heatProducts} unit="МВт" color="text-green-300" />
-          <StatCard label="Потери тепла" value={heatBalance.heatLosses} unit="МВт" color="text-slate-300" />
-          <StatCard label="КПД установки" value={heatBalance.efficiency} unit="%" color="text-emerald-300" icon={<TrendingUp size={16} className="text-emerald-400" />} />
+        {/* Круговая диаграмма */}
+        <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
+          <h3 className="text-sm font-bold text-slate-300 mb-3">Распределение продуктов</h3>
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={yieldData}
+                cx="50%"
+                cy="50%"
+                outerRadius={90}
+                innerRadius={45}
+                paddingAngle={2}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}%`}
+              >
+                {yieldData.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
-      </div>
 
-      {/* Материальный баланс */}
-      <div>
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Scale size={20} className="text-purple-400" />
-          Материальный баланс
-        </h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead>
-              <tr className="border-b border-slate-700 text-slate-400">
-                <th className="py-2 px-3">Поток</th>
-                <th className="py-2 px-3 text-right">Расход, т/ч</th>
-                <th className="py-2 px-3 text-right">Доля, %</th>
-              </tr>
-            </thead>
-            <tbody className="text-white">
-              <tr className="border-b border-slate-700/50 bg-slate-700/10 font-semibold">
-                <td className="py-2 px-3">▶ Сырьё (вход)</td>
-                <td className="py-2 px-3 text-right">{materialBalance.feedIn.toFixed(2)}</td>
-                <td className="py-2 px-3 text-right">100.0</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-sky-300">  Газ</td>
-                <td className="py-2 px-3 text-right">{materialBalance.gasOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.gasOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-yellow-300">  Бензин</td>
-                <td className="py-2 px-3 text-right">{materialBalance.gasolineOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.gasolineOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-green-300">  Лёгкий газойль</td>
-                <td className="py-2 px-3 text-right">{materialBalance.lightGasoilOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.lightGasoilOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-orange-300">  Тяжёлый газойль</td>
-                <td className="py-2 px-3 text-right">{materialBalance.heavyGasoilOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.heavyGasoilOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-red-300">  Кокс</td>
-                <td className="py-2 px-3 text-right">{materialBalance.cokeOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.cokeOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-              <tr className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                <td className="py-2 px-3 text-slate-400">  Потери</td>
-                <td className="py-2 px-3 text-right">{materialBalance.lossesOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.lossesOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-              <tr className="bg-slate-700/20 font-semibold">
-                <td className="py-2 px-3">◀ Итого (выход)</td>
-                <td className="py-2 px-3 text-right">{materialBalance.totalOut.toFixed(3)}</td>
-                <td className="py-2 px-3 text-right">{((materialBalance.totalOut / materialBalance.feedIn) * 100).toFixed(1)}</td>
-              </tr>
-            </tbody>
-          </table>
-          <p className="text-xs text-slate-500 mt-2 px-3">
-            Невязка баланса: {materialBalance.closureError.toFixed(3)}%
-          </p>
+        {/* Радарная диаграмма */}
+        <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700 lg:col-span-2">
+          <h3 className="text-sm font-bold text-slate-300 mb-3">Показатели эффективности процесса</h3>
+          <ResponsiveContainer width="100%" height={280}>
+            <RadarChart data={radarData}>
+              <PolarGrid stroke="#334155" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+              <PolarRadiusAxis tick={{ fill: '#64748b', fontSize: 9 }} />
+              <Radar name="Показатели" dataKey="A" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.3} />
+              <Legend />
+            </RadarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>
   );
-}
+};
+
+const KpiCard: React.FC<{ label: string; value: string; color: string }> = ({ label, value, color }) => (
+  <div className="bg-slate-800/80 rounded-xl p-3 border border-slate-700 text-center">
+    <div className={`text-lg font-bold ${color}`}>{value}</div>
+    <div className="text-xs text-slate-500 mt-1">{label}</div>
+  </div>
+);
+
+export default ResultsPanel;
