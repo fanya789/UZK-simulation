@@ -10,38 +10,52 @@ interface Props {
   setSelectedFeedstock: (f: FeedstockProperties) => void;
   onSimulate: () => void;
   onReset: () => void;
+  userFeedstocks?: FeedstockProperties[];
+  onAddCustomFeedstock?: () => void;
 }
 
 const ParametersPanel: React.FC<Props> = ({
-                                            params, setParams, selectedFeedstock, setSelectedFeedstock, onSimulate, onReset
+                                            params, setParams, selectedFeedstock, setSelectedFeedstock,
+                                            onSimulate, onReset, userFeedstocks = [], onAddCustomFeedstock
                                           }) => {
   const updateParam = (key: keyof ProcessParameters, value: number) => {
     setParams({ ...params, [key]: value });
   };
 
+  const allFeedstocks = [...feedstockDatabase, ...userFeedstocks];
+
   return (
       <div className="space-y-5">
-        {/* Характеристики сырья (без изменений) */}
+        {/* Характеристики сырья */}
         <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
           <h3 className="text-sm font-bold text-blue-400 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 bg-blue-400 rounded-full" />
             Характеристики сырья
           </h3>
-          <div className="mb-3">
-            <label className="block text-xs text-slate-400 mb-1">Тип сырья</label>
-            <select
-                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={selectedFeedstock.id}
-                onChange={(e) => {
-                  const f = feedstockDatabase.find(fd => fd.id === e.target.value);
-                  if (f) setSelectedFeedstock(f);
-                }}
+          <div className="flex gap-2 mb-3">
+            <div className="flex-1">
+              <label className="block text-xs text-slate-400 mb-1">Тип сырья</label>
+              <select
+                  className="w-full bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={selectedFeedstock.id}
+                  onChange={(e) => {
+                    const f = allFeedstocks.find(fd => fd.id === e.target.value);
+                    if (f) setSelectedFeedstock(f);
+                  }}
+              >
+                {allFeedstocks.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            </div>
+            <button
+                onClick={onAddCustomFeedstock}
+                className="bg-blue-700 hover:bg-blue-600 px-3 py-2 rounded-lg text-sm whitespace-nowrap self-end"
             >
-              {feedstockDatabase.map(f => (
-                  <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
+              ➕ Своё
+            </button>
           </div>
+
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-slate-900/60 rounded-lg p-2">
               <span className="text-slate-500">Плотность:</span>
@@ -93,7 +107,7 @@ const ParametersPanel: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Параметры процесса (без изменений) */}
+        {/* Остальные блоки параметров (печь, камеры, колонна) без изменений */}
         <div className="bg-slate-800/80 rounded-xl p-4 border border-slate-700">
           <h3 className="text-sm font-bold text-red-400 mb-3 flex items-center gap-2">
             <span className="w-2 h-2 bg-red-400 rounded-full" />
@@ -187,7 +201,6 @@ const ParametersPanel: React.FC<Props> = ({
   );
 };
 
-// Компонент слайдера с подсказкой (добавлен title)
 const ParamSlider: React.FC<{
   label: string;
   value: number;
@@ -197,7 +210,6 @@ const ParamSlider: React.FC<{
   unit: string;
   onChange: (v: number) => void;
 }> = ({ label, value, min, max, step, unit, onChange }) => {
-  // Обработчик изменения числового поля с коррекцией
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = parseFloat(e.target.value);
     if (isNaN(raw)) raw = min;

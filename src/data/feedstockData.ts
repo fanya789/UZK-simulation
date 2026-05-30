@@ -595,3 +595,42 @@ export const feedstockDatabase: FeedstockProperties[] = [
 ];
 
 export const getDefaultFeedstock = (): FeedstockProperties => feedstockDatabase[0];
+// feedstockData.ts (добавить в конец файла)
+
+export const createEmptyFeedstock = (): FeedstockProperties => ({
+  id: `custom_${Date.now()}`,
+  name: 'Новое сырьё',
+  density: 1.0,
+  cokability: 15.0,
+  sulfur: 2.0,
+  ash: 0.1,
+  viscosity100: 500,
+  carbon: 85,
+  hydrogen: 10,
+  nitrogen: 0.4,
+  vanadium: 100,
+  nickel: 20,
+  flashPoint: 300,
+  pourPoint: 30,
+  paraffins: 20,
+  naphthenes: 20,
+  aromatics: 40,
+  resins: 12,
+  asphaltenes: 8,
+  defaultYields: {
+    gas: 6,
+    headStabilization: 2.5,
+    gasoline: 12,
+    lightGasOil: 28,
+    heavyGasOil: 26,
+    coke: 23,
+    losses: 2.5,
+  },
+  fractionComposition: {
+    gas: { hydrogen: 9, methane: 32, ethane: 18, ethylene: 7, propane: 12, propylene: 8, butanes: 10, h2s: 4 },
+    gasoline: { paraffins: 30, naphthenes: 18, aromatics: 25, olefins: 27, sulfur: 0.5, octaneRON: 68, octaneMON: 60, density: 0.73, boilingStart: 38, boilingEnd: 180 },
+    lightGasOil: { paraffins: 25, naphthenes: 22, aromatics: 53, sulfur: 1.8, density: 0.87, cetaneNumber: 42, boilingStart: 180, boilingEnd: 350 },
+    heavyGasOil: { paraffins: 12, naphthenes: 15, aromatics: 55, resins: 18, sulfur: 2.2, density: 0.96, cokability: 3.5, boilingStart: 350, boilingEnd: 520 },
+    coke: { volatiles: 8, ash: 0.3, sulfur: 2.5, moisture: 3, trueDensity: 2.08 },
+  },
+});

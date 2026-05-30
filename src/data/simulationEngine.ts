@@ -963,3 +963,94 @@ export function calculateEcology(
     },
   };
 }
+// Добавить в конец simulationEngine.ts
+
+// ========== РАСШИРЕННЫЙ НЕЙРОСЕТЕВОЙ МОДУЛЬ ==========
+
+export interface NormalizationParams {
+  mean: number[];
+  std: number[];
+}
+
+export function normalizeData(
+    data: number[][],
+    params?: NormalizationParams
+): { normalized: number[][]; params: NormalizationParams } {
+  const numFeatures = data[0].length;
+  const mean = params?.mean || Array(numFeatures).fill(0);
+  const std = params?.std || Array(numFeatures).fill(1);
+  if (!params) {
+    for (let i = 0; i < numFeatures; i++) {
+      const col = data.map(row => row[i]);
+      mean[i] = col.reduce((a,b) => a+b, 0) / col.length;
+      const variance = col.reduce((a,b) => a + Math.pow(b - mean[i], 2), 0) / col.length;
+      std[i] = Math.sqrt(variance);
+      if (std[i] === 0) std[i] = 1;
+    }
+  }
+  const normalized = data.map(row => row.map((val, idx) => (val - mean[idx]) / std[idx]));
+  return { normalized, params: { mean, std } };
+}
+
+export function createEnsembleModels(inputDim: number, outputDim: number, nModels: number = 5): tf.Sequential[] {
+  const models: tf.Sequential[] = [];
+  for (let i = 0; i < nModels; i++) {
+    const model = tf.sequential();
+    model.add(tf.layers.dense({ inputShape: [inputDim], units: 32, activation: 'relu', kernelInitializer: 'glorotNormal' }));
+    model.add(tf.layers.batchNormalization());
+    model.add(tf.layers.dropout({ rate: 0.2 }));
+    model.add(tf.layers.dense({ units: 24, activation: 'relu' }));
+    model.add(tf.layers.dense({ units: 16, activation: 'relu' }));
+    model.add(tf.layers.dense({ units: outputDim, activation: 'linear' }));
+    model.compile({ optimizer: tf.train.adam(0.001), loss: 'meanSquaredError', metrics: ['mae'] });
+    models.push(model);
+  }
+  return models;
+}
+
+export interface TrainingConfig {
+  epochs: number;
+  batchSize: number;
+  validationSplit: number;
+  earlyStoppingPatience: number;
+}
+
+export async function trainEnsemble(
+    models: tf.Sequential[],
+    xTrain: tf.Tensor2D,
+    yTrain: tf.Tensor2D,
+    xVal: tf.Tensor2D,
+    yVal: tf.Tensor2D,
+    config: TrainingConfig,
+    onEpochEnd?: (epoch: number, loss: number, valLoss: number) => void
+): Promise<tf.History[]> {
+  const histories: tf.History[] = [];
+  for (let i = 0; i < models.length; i++) {
+    const history = await models[i].fit(xTrain, yTrain, {
+      epochs: config.epochs,
+      batchSize: config.batchSize,
+      validationData: [xVal, yVal],
+      callbacks: {
+        onEpochEnd: (epoch, logs) => {
+          if (onEpochEnd) onEpochEnd(epoch, logs.loss, logs.val_loss);
+        },
+      },
+      earlyStopping: {
+        monitor: 'val_loss',
+        patience: config.earlyStoppingPatience,
+        restoreBestWeights: true,
+      },
+    });
+    histories.push(history);
+  }
+  return histories;
+}
+
+export function ensemblePredict(models: tf.Sequential[], input: tf.Tensor2D): { mean: tf.Tensor1D; std: tf.Tensor1D } {
+  const predictions = models.map(m => m.predict(input) as tf.Tensor2D);
+  const stacked = tf.stack(predictions, 0); // [nModels, batch, outputDim]
+  const mean = tf.mean(stacked, 0) as tf.Tensor2D;
+  const variance = tf.mean(tf.square(tf.sub(stacked, mean)), 0) as tf.Tensor2D;
+  const std = tf.sqrt(variance) as tf.Tensor2D;
+  return { mean: mean.squeeze(), std: std.squeeze() };
+}
