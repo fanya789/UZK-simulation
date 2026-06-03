@@ -79,3 +79,14 @@ input[type="number"]::-webkit-outer-spin-button {
 .recharts-default-tooltip {
   border-radius: 8px !important;
 }
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* для моноширинных шрифтов (терминал) */
+.font-mono {
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+}

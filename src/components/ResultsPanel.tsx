@@ -37,9 +37,9 @@ const ResultsPanel: React.FC<Props> = ({ results }) => {
       {/* Ключевые показатели */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard label="Глубина конверсии" value={`${keyIndicators.conversionDepth}%`} color="text-green-400" />
-        <KpiCard label="Выход светлых" value={`${keyIndicators.lightProductsYield}%`} color="text-cyan-400" />
+        <KpiCard label="Выход светлых" value={`${keyIndicators.lightProductsYield.toFixed(2)}%`} color="text-cyan-400" />
         <KpiCard label="Выход кокса" value={`${keyIndicators.cokeYield}%`} color="text-amber-400" />
-        <KpiCard label="Уд. расход энергии" value={`${keyIndicators.specificEnergyConsumption} кДж/кг`} color="text-red-400" />
+        <KpiCard label="Уд. расход энергии" value={`${keyIndicators.specificEnergyConsumption.toFixed(2)} кДж/кг`} color="text-red-400" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">

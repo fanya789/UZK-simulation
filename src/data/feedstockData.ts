@@ -1,4 +1,3 @@
-// Характеристики различных видов сырья для замедленного коксования
 export interface FeedstockProperties {
   id: string;
   name: string;
