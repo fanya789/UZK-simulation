@@ -85,7 +85,6 @@ const EcologyPanel: React.FC<Props> = ({ ecology }) => {
                         <div className="text-2xl font-bold">{ecology.waste.spentFilters_t_year.toFixed(1)} т/год</div>
                     </div>
                 </div>
-                <p className="text-xs text-slate-500 mt-3 text-center">* Расчёт выполнен на основе типовых удельных показателей регламента секции 100.</p>
             </div>
         </div>
     );
