@@ -9,17 +9,15 @@ import { feedstockDatabase, getDefaultFeedstock } from './data/feedstockData';
 import type { FeedstockProperties } from './data/feedstockData';
 import { runSimulation, getDefaultParams } from './data/simulationEngine';
 import type { ProcessParameters, SimulationResults, EconomicsResult, EcologyResult } from './data/simulationEngine';
-import { calculateEconomics, calculateEcology } from './data/simulationEngine';
 import FurnaceCoilPanel from './components/FurnaceCoilPanel';
+import { calculateEcology } from './data/simulationEngine';
 import ChamberHeatBalancePanel from './components/ChamberHeatBalancePanel';
-import GasFractionationPanel from './components/GasFractionationPanel';
-import GasDeepProcessingPanel from './components/GasDeepProcessingPanel';
-import NeuralPredictorPanel from './components/NeuralPredictorPanel';
 import EconomicsPanel from './components/EconomicsPanel';
 import EcologyPanel from './components/EcologyPanel';
 import FeedstockEditorModal from './components/FeedstockEditorModal';
+import GasProcessingIntegrated from './components/GasProcessingIntegrated';
 
-type TabId = 'params' | 'scheme' | 'furnace' | 'chamber' | 'results' | 'fractions' | 'balance' | 'gasfrac' | 'gasdeep' | 'neural' | 'economics' | 'ecology';
+type TabId = 'params' | 'scheme' | 'furnace' | 'chamber' | 'results' | 'fractions' | 'balance' | 'gasprocessing' | 'neural' | 'economics' | 'ecology';
 
 interface Tab {
   id: TabId;
@@ -35,9 +33,7 @@ const tabs: Tab[] = [
   { id: 'results', label: 'Результаты', icon: '📊' },
   { id: 'fractions', label: 'Фракционный состав', icon: '🧪' },
   { id: 'balance', label: 'Балансы', icon: '⚖️' },
-  { id: 'gasfrac', label: 'Газофракционирование', icon: '🧪' },
-  { id: 'gasdeep', label: 'Глубокая переработка', icon: '⚙️' },
-  { id: 'neural', label: 'Нейросеть', icon: '🧠' },
+  { id: 'gasprocessing', label: 'Переработка газа', icon: '⚙️' },
   { id: 'economics', label: 'Экономика', icon: '💰' },
   { id: 'ecology', label: 'Экология', icon: '🌍' },
 ];
@@ -80,7 +76,6 @@ function App() {
   const [results, setResults] = useState<SimulationResults | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [hasSimulated, setHasSimulated] = useState(false);
-  const [economics, setEconomics] = useState<EconomicsResult | null>(null);
   const [ecology, setEcology] = useState<EcologyResult | null>(null);
   const debounceTimer = useRef<number | null>(null);
 
@@ -147,8 +142,6 @@ function App() {
   useEffect(() => {
     if (results) {
       const feedRate_kg_s = params.feedRate * 1000 / 3600;
-      const econ = calculateEconomics(selectedFeedstock.name, feedRate_kg_s, results.yields, results.keyIndicators);
-      setEconomics(econ);
       const ecol = calculateEcology(feedRate_kg_s, results.yields, params, 0);
       setEcology(ecol);
     }
@@ -162,6 +155,7 @@ function App() {
     setSelectedFeedstock(newFeedstock);
     debouncedSimulation(newFeedstock, params);
   };
+
   return (
       <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-200">
         {/* Header (без изменений) */}
@@ -364,16 +358,24 @@ function App() {
                       feedstock={selectedFeedstock}
                   />
               )}
-              {activeTab === 'gasfrac' && <GasFractionationPanel fatGasFlow_kg_h={results?.massBalance.gasOut ? results.massBalance.gasOut * 1000 : 5000} />}
-              {activeTab === 'gasdeep' && (
-                  <GasDeepProcessingPanel
-                      fatGasFlow_kg_h={results?.massBalance.gasOut ? results.massBalance.gasOut * 1000 : 5000}
+              {activeTab === 'gasprocessing' && results && (
+                  <GasProcessingIntegrated
+                      fatGasFlow_kg_h={results.massBalance.gasOut * 1000}
+                      unstableGasoline_kg_h={results.massBalance.gasolineOut * 1000}
                   />
               )}
-              {activeTab === 'neural' && <NeuralPredictorPanel />}
-              {activeTab === 'economics' && <EconomicsPanel economics={economics} feedRate_tph={params.feedRate} />}
+              {activeTab === 'gasprocessing' && !results && (
+                  <GasProcessingIntegrated fatGasFlow_kg_h={5000} unstableGasoline_kg_h={8000} />
+              )}
+              {activeTab === 'economics' && results && (
+                  <EconomicsPanel
+                      feedRate_tph={params.feedRate}
+                      results={results}
+                      selectedFeedstock={selectedFeedstock}
+                      courseRubToUsd={100}
+                  />
+              )}
               {activeTab === 'ecology' && <EcologyPanel ecology={ecology} />}
-
               {!results && activeTab !== 'params' && (
                   <div className="text-center py-20">
                     <div className="text-6xl mb-4">🔬</div>
